@@ -4,9 +4,9 @@ on:
   push:
     branches:
     - master
-    # paths:
-    # - 'reports/**'
-    # - '.github/workflows/**'
+    paths:
+    - 'reports/**'
+    - '.github/workflows/**'
 
 jobs:
   deploy-prod:
