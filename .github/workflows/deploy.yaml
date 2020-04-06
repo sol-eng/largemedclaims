@@ -23,10 +23,13 @@ jobs:
         env:
           CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}
         run: |
-          client <- connectapi::connect(host = "https://colorado.rstudio.com/rsc",
+          library(connectapi)
+          client <- connect(host = "https://colorado.rstudio.com/rsc",
                               api_key = Sys.getenv("CONNECT_API_KEY"))
-          bundle <- connectapi::bundle_dir("reports")
+          bundle <- bundle_dir("reports")
           app_name <- "large_claims_summary"
-          content <- connectapi::deploy(client, bundle, name = app_name,
+          content <- deploy(client, bundle, name = app_name,
                                         access_type = "all")
+          content %>%
+            set_vanity_url("/med-claims-summary")
         shell: Rscript {0}
