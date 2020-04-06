@@ -1,12 +1,12 @@
+name: Deploy
+
 on:
   push:
     branches:
     - master
-    paths:
-    - 'reports/**'
-    - '.github/workflows/**'
-
-name: Deploy
+    # paths:
+    # - 'reports/**'
+    # - '.github/workflows/**'
 
 jobs:
   deploy-prod:
