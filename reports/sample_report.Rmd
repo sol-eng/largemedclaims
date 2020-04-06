@@ -1,0 +1,136 @@
+---
+title: "Large claims summary"
+output: html_document
+params:
+  deductible: 0
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r data-ingest, include = FALSE, cache = TRUE}
+library(pins)
+library(readr)
+library(rsconnect)
+library(gt)
+library(dplyr)
+
+board_register_rsconnect(
+  name = "rsconnect",
+  server = "https://colorado.rstudio.com/rsc",
+  key = Sys.getenv("CONNECT_API_KEY")
+)
+claims_99 <- pin_get("claims_99", board = "rsconnect")
+
+```
+
+```{r data-prep, include = FALSE}
+library(gt)
+library(dplyr)
+
+deductible <- params$deductible
+
+icd_mapping <- tibble::tribble(
+  ~ICD9MIN, ~ICD9MAX,~  DIAGCAT,
+  "001", "139", "Infectious & Parasitic Disease",
+  "140", "239", "Malignant Neoplasms",
+  "240", "279", "Endocrine & Metabolic Disorders",
+  "280", "289", "Blood Related Disorders",
+  "290", "319", "Mental Disorders, Drug, Alcohol",
+  "320", "359", "Nervous System",
+  "360", "389", "Sense Organs",
+  "390", "459", "Circulatory System",
+  "460", "519", "Respiratory System",
+  "520", "579", "Digestive System",
+  "580", "629", "Genitourinary System",
+  "630", "679", "Pregnancy & Childbirth",
+  "680", "709", "Skin Disorders",
+  "710", "739", "Skeleton & Muscle System",
+  "740", "779", "Congenital & Perinatal",
+  "780", "799", "Symptoms & Ill-Defined Conditions",
+  "800", "999", "Injury & Poisoning",
+  "V00", "V84", "Health Status or Service"
+)
+
+tab1 <- claims_99 %>% 
+  group_by(DGCAT) %>% 
+  summarize(
+    claimants_exceeding_deductible = sum(TOTPDCHG > !!deductible),
+    paid_charges_exceeding_deductible = 
+      sum(TOTPDCHG[TOTPDCHG > !!deductible] - !!deductible),
+    excess_charges_per_claimant = paid_charges_exceeding_deductible /
+      claimants_exceeding_deductible
+    ) %>% 
+  left_join(icd_mapping, by = c(DGCAT = "DIAGCAT")) %>% 
+  mutate_at(c("ICD9MIN", "ICD9MAX"), ~ ifelse(is.na(.x), "", .x)) %>% 
+  mutate(percent_of_charges = paid_charges_exceeding_deductible /
+           sum(paid_charges_exceeding_deductible))
+
+tab1_gt <- tab1 %>% 
+  dplyr::arrange(ICD9MIN) %>% 
+  gt() %>% 
+  cols_move_to_start(vars(ICD9MIN, ICD9MAX)) %>% 
+  # gt(rowname_col = "DGCAT") %>% 
+  fmt_currency(
+    columns = vars(paid_charges_exceeding_deductible, excess_charges_per_claimant),
+    currency = "USD",
+    decimals = FALSE
+  ) %>% 
+  fmt_percent(
+    columns = vars(percent_of_charges)
+  ) %>% 
+  fmt_number(
+    columns = vars(claimants_exceeding_deductible),
+    decimals = FALSE
+  ) %>% 
+  cols_align(
+    align = "right",
+    columns = vars(claimants_exceeding_deductible)
+  ) %>% 
+  tab_header(
+    "Paid Charges Exceeding Deductible Amounts, by Diagnosis Category",
+    glue::glue("Deductible: $", format(deductible,big.mark = ","))
+  ) %>% 
+  summary_rows(fns = list(`All Diagnoses` = ~sum(.)), 
+               columns = vars(claimants_exceeding_deductible),
+               formatter = fmt_number, decimals = FALSE) %>% 
+  summary_rows(fns = list(`All Diagnoses` = ~sum(.)),
+               columns = vars(paid_charges_exceeding_deductible),
+               formatter = fmt_currency, decimals = FALSE) %>% 
+  summary_rows(fn = list(`All Diagnoses` = ~sum(.)),
+               columns = vars(percent_of_charges),
+               formatter = fmt_percent) %>% 
+  (function(x) {
+    value <- function() x$`_data` %>% 
+      summarize(avg = sum(paid_charges_exceeding_deductible) /
+                  sum(claimants_exceeding_deductible)) %>% 
+      pull(avg)
+    summary_rows(x, fns = list(
+    `All Diagnoses` = ~ value()
+    ),
+    columns = vars(excess_charges_per_claimant),
+    formatter = fmt_currency, decimals = FALSE
+  )
+  }) %>% 
+  cols_label(
+    DGCAT = "Diagnosis Category", 
+    claimants_exceeding_deductible = "Claimants Exceeding Deductible",
+    paid_charges_exceeding_deductible = "Paid Charges Exceeding Deductible",
+    excess_charges_per_claimant = "Excess Charges Per Claimant",
+    percent_of_charges = "Percent of Charges"
+  ) %>% 
+  gt::tab_spanner(label = "ICD Codes", columns = c("ICD9MIN", "ICD9MAX")) %>% 
+  cols_label(
+    ICD9MIN = "Min",
+    ICD9MAX = "Max"
+  )
+```
+
+In this example, we take data from Society of Actuaries' [group health experience 
+study on large medical claims](https://www.soa.org/resources/experience-studies/2000-2004/research-medical-large-claims-experience-study) and reproduce an analysis table.
+
+```{r, echo = FALSE}
+tab1_gt
+```
+
