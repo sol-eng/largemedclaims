@@ -1,6 +1,5 @@
 library(keras)
 library(tensorflow)
-library(pins)
 
 m <- load_model_tf("saved_model/toy-model")
 
