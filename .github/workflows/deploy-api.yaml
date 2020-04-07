@@ -37,7 +37,7 @@ jobs:
           bundle <- bundle_dir("ml_api")
           app_name <- "large_claims_api"
           content <- deploy(client, bundle, name = app_name,
-                                        access_type = "all")
+                            access_type = "all")
           content %>%
             set_vanity_url("/large_claims_model")
         shell: Rscript {0}
