@@ -32,6 +32,8 @@ jobs:
           )
           model_tarball <- pins::pin_get("med_claims_model")
           untar(model_tarball, exdir = "ml_api")
+          client <- connect(host = "https://colorado.rstudio.com/rsc",
+                              api_key = Sys.getenv("CONNECT_API_KEY"))
           bundle <- bundle_dir("ml_api")
           app_name <- "large_claims_api"
           content <- deploy(client, bundle, name = app_name,
