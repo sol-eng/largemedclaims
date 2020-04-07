@@ -4,9 +4,9 @@ on:
   push:
     branches:
     - master
-    # paths:
-    # - 'ml_api/**'
-    # - '.github/workflows/**'
+    paths:
+    - 'ml_api/**'
+    - '.github/workflows/deploy-api.yaml'
 
 jobs:
   deploy-api:

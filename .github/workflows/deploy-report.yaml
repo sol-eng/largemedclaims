@@ -1,4 +1,4 @@
-name: Deploy
+name: Report 
 
 on:
   push:
@@ -6,10 +6,10 @@ on:
     - master
     paths:
     - 'reports/**'
-    - '.github/workflows/**'
+    - '.github/workflows/deploy-report.yaml'
 
 jobs:
-  deploy-prod:
+  deploy-report:
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v2
