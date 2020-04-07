@@ -16,7 +16,7 @@ jobs:
       - uses: r-lib/actions/setup-r@master
       - name: Download dependencies
         run: |
-          install.packages("remotes")
+          install.packages("remotes", "pins")
           remotes::install_github("rstudio/connectapi")
         shell: Rscript {0}
       - name: Deploy
