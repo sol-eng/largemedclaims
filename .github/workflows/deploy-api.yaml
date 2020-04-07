@@ -1,0 +1,41 @@
+name: API
+
+on:
+  push:
+    branches:
+    - master
+    # paths:
+    # - 'ml_api/**'
+    # - '.github/workflows/**'
+
+jobs:
+  deploy-api:
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: r-lib/actions/setup-r@master
+      - name: Download dependencies
+        run: |
+          install.packages("remotes")
+          remotes::install_github("rstudio/connectapi")
+        shell: Rscript {0}
+      - name: Deploy
+        env:
+          CONNECT_API_KEY: ${{ secrets.CONNECT_API_KEY }}
+        run: |
+          library(pins)
+          library(connectapi)
+          board_register_rsconnect(
+            name = "rsconnect",
+            server = "https://colorado.rstudio.com/rsc",
+           key = Sys.getenv("CONNECT_API_KEY")
+          )
+          model_tarball <- pins::pin_get("med_claims_model")
+          untar(model_tarball, exdir = "ml_api")
+          bundle <- bundle_dir("ml_api")
+          app_name <- "large_claims_api"
+          content <- deploy(client, bundle, name = app_name,
+                                        access_type = "all")
+          content %>%
+            set_vanity_url("/large_claims_model")
+        shell: Rscript {0}
