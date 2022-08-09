@@ -48,7 +48,7 @@ tensorflow-estimator==2.0.1
 tensorflow-lattice==2.0.2
 tensorflow-probability==0.8.0
 termcolor==1.1.0
-urllib3==1.25.8
+urllib3==1.26.5
 Werkzeug==1.0.0
 wrapt==1.12.1
 
